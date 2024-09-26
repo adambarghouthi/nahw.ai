@@ -15,7 +15,6 @@ const useSentence = (s: string) => {
   const addCharDiacritic = useCallback(
     (pos: number, diacritic: number) => {
       const newSentence = addDiacritic(sentence, pos, diacritic);
-      console.log(sentence, newSentence);
       setSentence(newSentence);
     },
     [sentence, setSentence]
