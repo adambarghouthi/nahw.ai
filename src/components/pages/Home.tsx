@@ -3,32 +3,32 @@
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { Trash, Languages, CircleHelp, Redo, Undo } from "lucide-react";
 
-import { makeCharGroupsWithZwj, removeZwj } from "@/lib/shaping";
-import { diacritics } from "@/lib/diacritics";
+import { removeDiacritics, removeZwj } from "@/lib/shaping";
+import { diacritics, diacriticsCodePoints } from "@/lib/diacritics";
 import { generateSentence } from "@/lib/openai";
-import type { AIJsonSchema } from "@/lib/openai";
+import type { SentenceObjectType } from "@/lib/openai";
 import type { DifficultyType } from "@/lib/utils";
 import { convertToCodepoints, difficultyItems, orderShadda } from "@/lib/utils";
 import useSentence from "@/hooks/useSentence";
+import useActions from "@/hooks/useActions";
 
 import Sentence from "../Sentence";
 import DiacriticsMenubar from "../DiacriticsMenubar";
-import { Button } from "../ui/button";
-import { TooltipProvider } from "../ui/tooltip";
 import Spinner from "../Spinner";
 import Select from "../Select";
 import Tooltip from "../Tooltip";
 import HelpTooltipContent from "../HelpTooltipContent";
-import useActions from "@/hooks/useActions";
+import { Button } from "../ui/button";
+import { TooltipProvider } from "../ui/tooltip";
 
 export default function Home() {
   const {
-    sentence,
+    sentence: mutableSentence,
     charGroups,
     addCharDiacritic,
     removeCharDiacritics,
     removeCharDiacritic,
-    setSentence,
+    setSentence: setMutableSentence,
   } = useSentence("");
   const {
     addAction,
@@ -41,7 +41,7 @@ export default function Home() {
 
   const [selectedToggle, setSelectedToggle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [aiJson, setAiJson] = useState<AIJsonSchema>();
+  const [sentenceObject, setSentenceObject] = useState<SentenceObjectType>();
   const [difficulty, setDifficulty] = useState<DifficultyType>(
     difficultyItems[0].value
   );
@@ -49,55 +49,71 @@ export default function Home() {
   const isInitialized = useRef(false);
 
   const isComplete = useMemo(() => {
-    if (!aiJson || !sentence) return false;
+    if (!sentenceObject || !mutableSentence) return false;
 
-    const codePoints1 = orderShadda(convertToCodepoints(sentence));
-    const codePoints2 = orderShadda(convertToCodepoints(aiJson.diacritic));
+    const codePoints1 = orderShadda(convertToCodepoints(mutableSentence));
+    const codePoints2 = orderShadda(convertToCodepoints(sentenceObject.arabic));
 
     return JSON.stringify(codePoints1) === JSON.stringify(codePoints2);
-  }, [sentence]);
+  }, [mutableSentence]);
 
   const hasDiacritic = useMemo(() => {
-    return sentence !== aiJson?.plain;
-  }, [sentence]);
+    return Boolean(
+      convertToCodepoints(mutableSentence).find((cp) =>
+        diacriticsCodePoints.includes(cp)
+      )
+    );
+  }, [mutableSentence]);
 
-  const onNextClick = useCallback(async (d: DifficultyType) => {
-    console.log("difficulty:", d);
-    try {
-      setLoading(true);
+  const onNextClick = useCallback(
+    async (d: DifficultyType) => {
+      console.log("difficulty:", d);
+      try {
+        setLoading(true);
+        setSelectedToggle(null);
 
-      const completion = await generateSentence(d);
-      const jsonResult: AIJsonSchema = JSON.parse(
-        completion.choices[0].message.content as string
-      );
-      setAiJson(jsonResult);
-      console.log(jsonResult);
-      resetActions();
-      setSentence(jsonResult.plain);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const completion = await generateSentence(d);
+        const result: SentenceObjectType = JSON.parse(
+          completion.choices[0].message.content as string
+        );
+        console.log(result);
+        setSentenceObject(result);
+        setMutableSentence(removeDiacritics(result.arabic));
+        resetActions();
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setSentenceObject, setMutableSentence, resetActions, setLoading]
+  );
 
-  const onAddDiacritic = (cIdx: number) => {
-    if (!selectedToggle) return;
+  const onAddDiacritic = useCallback(
+    (cIdx: number) => {
+      if (!selectedToggle) return;
 
-    let codePointIdx = 0;
+      let codePointIdx = 0;
 
-    for (let i = 0; i < cIdx; i++) {
-      const charGroupWithoutZwj = removeZwj(charGroups[i]);
-      codePointIdx += charGroupWithoutZwj.length;
-    }
+      for (let i = 0; i < cIdx; i++) {
+        const charGroupWithoutZwj = removeZwj(charGroups[i]);
+        codePointIdx += charGroupWithoutZwj.length;
+      }
 
-    const diacriticCodepoint = diacritics.find(
-      (d) => d.name === selectedToggle
-    )?.codePoint;
+      const diacriticCodepoint = diacritics.find(
+        (d) => d.name === selectedToggle
+      )?.codePoint as number;
 
-    addCharDiacritic(codePointIdx, diacriticCodepoint as number);
-    addAction({ pos: codePointIdx, diacritic: diacriticCodepoint as number });
-  };
+      addCharDiacritic(codePointIdx, diacriticCodepoint);
+      addAction({ pos: codePointIdx, diacritic: diacriticCodepoint });
+    },
+    [selectedToggle, addCharDiacritic, addAction]
+  );
+
+  const onRemoveDiacritics = useCallback(() => {
+    removeCharDiacritics();
+    resetActions();
+  }, [removeCharDiacritics, resetActions]);
 
   const onDifficultyChange = useCallback(
     (value: string) => {
@@ -153,14 +169,14 @@ export default function Home() {
           ) : (
             <TooltipProvider>
               <Sentence
-                sentence={sentence}
+                sentence={mutableSentence}
                 charGroups={charGroups}
-                mapping={aiJson?.word_mapping ?? []}
+                mapping={sentenceObject?.word_mapping ?? []}
                 onCharSelect={onAddDiacritic}
               />
 
               <div className="flex items-center justify-center gap-x-5 mt-8">
-                <Tooltip content={aiJson?.translation as string}>
+                <Tooltip content={sentenceObject?.translation as string}>
                   <Button variant="ghost" size="icon">
                     <Languages className="h-4 w-4" />
                   </Button>
@@ -169,7 +185,7 @@ export default function Home() {
                 <Tooltip
                   content={
                     <HelpTooltipContent
-                      sentence={aiJson?.diacritic as string}
+                      sentence={sentenceObject?.arabic as string}
                     />
                   }
                 >
@@ -206,9 +222,9 @@ export default function Home() {
           )}
         </div>
 
-        {!loading && sentence && hasDiacritic && !isComplete && (
+        {!loading && mutableSentence && hasDiacritic && !isComplete && (
           <div className="mt-6">
-            <Button variant="link" size="sm" onClick={removeCharDiacritics}>
+            <Button variant="link" size="sm" onClick={onRemoveDiacritics}>
               <Trash className="h-4 w-4 me-1" /> Remove harakat
             </Button>
           </div>
