@@ -7,7 +7,7 @@ interface CharacterProps {
 export default function Character({ char, onSelect }: CharacterProps) {
   return (
     <a
-      className={classNames("cursor-pointer hover:text-green-500")}
+      className="cursor-pointer hover:text-green-500"
       onClick={() => onSelect(char)}
     >
       {char}
