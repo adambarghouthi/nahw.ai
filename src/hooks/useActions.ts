@@ -21,6 +21,7 @@ const useActions = () => {
 
     const oldActionIdx = actionIdx;
     setActionIdx((prevState) => prevState - 1);
+
     return actions[oldActionIdx];
   }, [actions, actionIdx, setActionIdx, undoDisabled]);
 
@@ -29,8 +30,9 @@ const useActions = () => {
 
     const newActionIdx = actionIdx + 1;
     setActionIdx(newActionIdx);
+
     return actions[newActionIdx];
-  }, [actions]);
+  }, [actions, actionIdx, setActionIdx, redoDisabled]);
 
   const addAction = useCallback(
     (action: ActionType) => {
@@ -51,7 +53,6 @@ const useActions = () => {
 
   useEffect(() => {
     setActionIdx(actions.length - 1);
-    console.log("actions", actions);
   }, [actions]);
 
   return {
