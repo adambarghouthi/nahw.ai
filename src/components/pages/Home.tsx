@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { Trash, Languages, CircleHelp, Redo, Undo } from "lucide-react";
 
-import { removeZwj } from "@/lib/shaping";
+import { makeCharGroupsWithZwj, removeZwj } from "@/lib/shaping";
 import { diacritics } from "@/lib/diacritics";
 import { generateSentence } from "@/lib/openai";
 import type { AIJsonSchema } from "@/lib/openai";
 import type { DifficultyType } from "@/lib/utils";
-import { difficultyItems } from "@/lib/utils";
+import { convertToCodepoints, difficultyItems, orderShadda } from "@/lib/utils";
 import useSentence from "@/hooks/useSentence";
 
 import Sentence from "../Sentence";
@@ -49,7 +49,12 @@ export default function Home() {
   const isInitialized = useRef(false);
 
   const isComplete = useMemo(() => {
-    return sentence === aiJson?.diacritic;
+    if (!aiJson || !sentence) return false;
+
+    const codePoints1 = orderShadda(convertToCodepoints(sentence));
+    const codePoints2 = orderShadda(convertToCodepoints(aiJson.diacritic));
+
+    return JSON.stringify(codePoints1) === JSON.stringify(codePoints2);
   }, [sentence]);
 
   const hasDiacritic = useMemo(() => {
@@ -77,7 +82,6 @@ export default function Home() {
   }, []);
 
   const onAddDiacritic = (cIdx: number) => {
-    console.log(selectedToggle);
     if (!selectedToggle) return;
 
     let codePointIdx = 0;
