@@ -230,7 +230,7 @@ export default function Home() {
           </div>
         )}
 
-        {isComplete && (
+        {!loading && isComplete && (
           <div className="mt-6">
             <Button
               className="bg-green-500 hover:bg-green-700"
