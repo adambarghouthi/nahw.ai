@@ -64,7 +64,7 @@ export default function Sentence({
           </Tooltip>
         );
       });
-  }, [onCharSelect, charGroups, mapping]);
+  }, [charGroups, mapping, onCharSelect]);
 
   return (
     <div
