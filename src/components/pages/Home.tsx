@@ -143,7 +143,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-neutral-900">
+    <div className="flex flex-col min-h-screen bg-neutral-900">
       <div className="flex items-center justify-center gap-x-2 h-16">
         <p className="text-sm text-muted-foreground ">Difficulty</p>
         <Select
@@ -243,7 +243,11 @@ export default function Home() {
           </div>
         )}
       </div>
-      <div className="bg-blue-300 h-16">Row 3</div>
+      <div className="flex items-center justify-center h-16">
+        <p className="text-sm text-muted-foreground">
+          Developed by Adam Albarghouthi
+        </p>
+      </div>
     </div>
   );
 }
