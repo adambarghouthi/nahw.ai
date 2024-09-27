@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 
+import { removeDiacritics } from "@/lib/shaping";
+
 import Character from "./Character";
 import Tooltip from "./Tooltip";
 
@@ -30,14 +32,16 @@ export default function Sentence({
       .sort((a, b) => a.index - b.index) // double-check order
       .map((m) => {
         const range = { start: -1, end: -1 };
+        const arabic = removeDiacritics(m.arabic);
+
         if (m.index === 0) {
           range.start = 0;
-          range.end = m.arabic.length;
+          range.end = arabic.length;
         } else {
           range.start = mapping
             .slice(0, m.index)
             .reduce((acc, _) => acc + _.arabic.length, 0);
-          range.end = range.start + m.arabic.length;
+          range.end = range.start + arabic.length;
         }
 
         return (
