@@ -17,9 +17,9 @@ import DiacriticsMenubar from "../DiacriticsMenubar";
 import Spinner from "../Spinner";
 import Select from "../Select";
 import Tooltip from "../Tooltip";
-import HelpTooltipContent from "../HelpTooltipContent";
 import { Button } from "../ui/button";
 import { TooltipProvider } from "../ui/tooltip";
+import classNames from "classnames";
 
 export default function Home() {
   const {
@@ -45,6 +45,7 @@ export default function Home() {
   const [difficulty, setDifficulty] = useState<DifficultyType>(
     difficultyItems[0].value
   );
+  const [showDiacritics, setShowDiacritics] = useState(false);
 
   const isInitialized = useRef(false);
 
@@ -55,7 +56,7 @@ export default function Home() {
     const codePoints2 = orderShadda(convertToCodepoints(sentenceObject.arabic));
 
     return JSON.stringify(codePoints1) === JSON.stringify(codePoints2);
-  }, [mutableSentence]);
+  }, [sentenceObject, mutableSentence]);
 
   const hasDiacritic = useMemo(() => {
     return Boolean(
@@ -86,7 +87,7 @@ export default function Home() {
         setLoading(false);
       }
     },
-    [setSentenceObject, setMutableSentence, resetActions, setLoading]
+    [setMutableSentence, resetActions]
   );
 
   const onAddDiacritic = useCallback(
@@ -107,7 +108,7 @@ export default function Home() {
       addCharDiacritic(codePointIdx, diacriticCodepoint);
       addAction({ pos: codePointIdx, diacritic: diacriticCodepoint });
     },
-    [selectedToggle, addCharDiacritic, addAction]
+    [charGroups, selectedToggle, addCharDiacritic, addAction]
   );
 
   const onRemoveDiacritics = useCallback(() => {
@@ -121,7 +122,7 @@ export default function Home() {
       setDifficulty(newDifficulty);
       onNextClick(newDifficulty);
     },
-    [setDifficulty, onNextClick]
+    [onNextClick]
   );
 
   const onUndoClick = useCallback(() => {
@@ -169,8 +170,9 @@ export default function Home() {
           ) : (
             <TooltipProvider>
               <Sentence
-                sentence={mutableSentence}
+                sentence={sentenceObject?.arabic}
                 charGroups={charGroups}
+                showDiacritics={showDiacritics}
                 mapping={sentenceObject?.word_mapping ?? []}
                 onCharSelect={onAddDiacritic}
               />
@@ -182,17 +184,14 @@ export default function Home() {
                   </Button>
                 </Tooltip>
 
-                <Tooltip
-                  content={
-                    <HelpTooltipContent
-                      sentence={sentenceObject?.arabic as string}
-                    />
-                  }
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onMouseOver={() => setShowDiacritics(true)}
+                  onMouseOut={() => setShowDiacritics(false)}
                 >
-                  <Button variant="ghost" size="icon">
-                    <CircleHelp className="h-4 w-4" />
-                  </Button>
-                </Tooltip>
+                  <CircleHelp className="h-4 w-4" />
+                </Button>
 
                 <div className="space-x-1">
                   <Tooltip content="Undo">
@@ -230,15 +229,17 @@ export default function Home() {
           </div>
         )}
 
-        {!loading && isComplete && (
+        {!loading && (
           <div className="mt-6">
             <Button
-              className="bg-green-500 hover:bg-green-700"
+              className={classNames(
+                isComplete ? "bg-green-500 hover:bg-green-700" : ""
+              )}
               variant="secondary"
               size="sm"
               onClick={() => onNextClick(difficulty)}
             >
-              Next sentence
+              {isComplete ? "Next sentence" : "New sentence"}
             </Button>
           </div>
         )}
