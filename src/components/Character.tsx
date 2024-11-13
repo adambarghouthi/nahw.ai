@@ -1,5 +1,3 @@
-import classNames from "classnames";
-
 interface CharacterProps {
   char: string | "";
   onSelect: (char: string) => void;

@@ -49,7 +49,7 @@ const useActions = () => {
   const resetActions = useCallback(() => {
     setActions([]);
     setActionIdx(-1);
-  }, [setActionIdx, setActionIdx]);
+  }, [setActionIdx]);
 
   useEffect(() => {
     setActionIdx(actions.length - 1);

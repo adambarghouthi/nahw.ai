@@ -3,10 +3,9 @@ import { useMemo } from "react";
 import { makeCharGroupsWithZwj, removeDiacritics } from "@/lib/shaping";
 
 import Word from "./Word";
-import classNames from "classnames";
 
 interface SentenceProps {
-  sentence: string | null | undefined;
+  sentence: string;
   charGroups: string[];
   showDiacritics: boolean;
   mapping: {
@@ -24,10 +23,6 @@ export default function Sentence({
   showDiacritics,
   onCharSelect,
 }: SentenceProps) {
-  if (!sentence || typeof sentence === "undefined") {
-    return null;
-  }
-
   const diacriticCharGroups = useMemo(
     () => makeCharGroupsWithZwj(sentence).filter((c) => c !== " "),
     [sentence]
@@ -58,7 +53,7 @@ export default function Sentence({
         ).slice(range.start, range.end);
 
         return (
-          <div className="relative">
+          <div key={`${range.start}${range.end}`} className="relative">
             <div className="relative z-10">
               <Word
                 index={m.index}
@@ -83,7 +78,7 @@ export default function Sentence({
           </div>
         );
       });
-  }, [charGroups, mapping, showDiacritics, onCharSelect]);
+  }, [charGroups, diacriticCharGroups, mapping, showDiacritics, onCharSelect]);
 
   return (
     <div

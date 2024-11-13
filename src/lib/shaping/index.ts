@@ -311,7 +311,9 @@ function getJoiningProperty(char: string) {
     if (arabicDiacritics.has(codePointStr)) {
       return JoiningProperties.Transparent;
     } else {
-      const char_shaping_data = (shapingData as any)[codePointStr];
+      const char_shaping_data = (shapingData as Record<string, string>)[
+        codePointStr
+      ];
 
       if (char_shaping_data === undefined) {
         return JoiningProperties.NonJoining;
