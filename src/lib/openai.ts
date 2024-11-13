@@ -1,5 +1,3 @@
-"use server";
-
 import OpenAI from "openai";
 
 import { difficultyPrompt, DifficultyType, getRandomTopic } from "./utils";
