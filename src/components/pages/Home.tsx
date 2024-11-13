@@ -1,14 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useState, useRef, useMemo } from "react";
-import { Trash, Languages, CircleHelp, Redo, Undo } from "lucide-react";
+import {
+  Trash,
+  Languages,
+  LoaderCircle,
+  CircleHelp,
+  Redo,
+  Undo,
+  Volume2,
+} from "lucide-react";
+import classNames from "classnames";
 
 import { removeDiacritics, removeZwj } from "@/lib/shaping";
 import { diacritics, diacriticsCodePoints } from "@/lib/diacritics";
-import { generateSentence } from "@/lib/openai";
 import type { SentenceObjectType } from "@/lib/openai";
 import type { DifficultyType } from "@/lib/utils";
 import { convertToCodepoints, difficultyItems, orderShadda } from "@/lib/utils";
+import { playAudio } from "@/lib/audio/play";
 import useSentence from "@/hooks/useSentence";
 import useActions from "@/hooks/useActions";
 
@@ -19,7 +28,6 @@ import Select from "../Select";
 import Tooltip from "../Tooltip";
 import { Button } from "../ui/button";
 import { TooltipProvider } from "../ui/tooltip";
-import classNames from "classnames";
 
 export default function Home() {
   const {
@@ -40,7 +48,8 @@ export default function Home() {
   } = useActions();
 
   const [selectedToggle, setSelectedToggle] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(true);
+  const [speaking, setSpeaking] = useState(false);
   const [sentenceObject, setSentenceObject] = useState<SentenceObjectType>();
   const [difficulty, setDifficulty] = useState<DifficultyType>(
     difficultyItems[0].value
@@ -66,25 +75,64 @@ export default function Home() {
     );
   }, [mutableSentence]);
 
+  const speakSentence = useCallback(async () => {
+    setSpeaking(true);
+    try {
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        body: `Say this sentence: ${sentenceObject?.arabic}`,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      console.time("jsonParse");
+      const data = await response.json();
+      console.timeEnd("jsonParse");
+      console.log("Response data parsed");
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (data.audioData && data.audioMimeType) {
+        console.log("Audio data received, length:", data.audioData.length);
+        console.time("audioPlayback");
+        await playAudio(data.audioData, data.audioMimeType, data.response);
+        console.timeEnd("audioPlayback");
+      } else {
+        throw new Error("Ooops, no audio received");
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setSpeaking(false);
+    }
+  }, [sentenceObject]);
+
   const onNextClick = useCallback(
     async (d: DifficultyType) => {
       console.log("difficulty:", d);
-      try {
-        setLoading(true);
-        setSelectedToggle(null);
+      setGenerating(true);
+      setSelectedToggle(null);
 
-        const completion = await generateSentence(d);
-        const result: SentenceObjectType = JSON.parse(
-          completion.choices[0].message.content as string
-        );
-        console.log(result);
-        setSentenceObject(result);
-        setMutableSentence(removeDiacritics(result.arabic));
+      try {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          body: JSON.stringify({ difficulty: d }),
+        });
+
+        const json = await res.json();
+        const sentenceResponse = json.response;
+
+        setSentenceObject(sentenceResponse);
+        setMutableSentence(removeDiacritics(sentenceResponse.arabic));
         resetActions();
       } catch (error) {
         console.log(error);
       } finally {
-        setLoading(false);
+        setGenerating(false);
       }
     },
     [setMutableSentence, resetActions]
@@ -141,7 +189,7 @@ export default function Home() {
       isInitialized.current = true;
       onNextClick(difficulty);
     }
-  }, []);
+  }, [difficulty, onNextClick]);
 
   return (
     <div className="flex flex-col min-h-screen bg-neutral-900">
@@ -165,12 +213,12 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col items-center justify-center p-2 min-h-40 max-w-md">
-          {loading ? (
+          {generating ? (
             <Spinner />
           ) : (
             <TooltipProvider>
               <Sentence
-                sentence={sentenceObject?.arabic}
+                sentence={sentenceObject?.arabic ?? ""}
                 charGroups={charGroups}
                 showDiacritics={showDiacritics}
                 mapping={sentenceObject?.word_mapping ?? []}
@@ -178,6 +226,19 @@ export default function Home() {
               />
 
               <div className="flex items-center justify-center gap-x-5 mt-8">
+                <Button
+                  variant={speaking ? "secondary" : "ghost"}
+                  size="icon"
+                  onClick={speakSentence}
+                  disabled={speaking}
+                >
+                  {speaking ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Volume2 className="h-4 w-4" />
+                  )}
+                </Button>
+
                 <Tooltip content={sentenceObject?.translation as string}>
                   <Button variant="ghost" size="icon">
                     <Languages className="h-4 w-4" />
@@ -221,7 +282,7 @@ export default function Home() {
           )}
         </div>
 
-        {!loading && mutableSentence && hasDiacritic && !isComplete && (
+        {!generating && mutableSentence && hasDiacritic && !isComplete && (
           <div className="mt-6">
             <Button variant="link" size="sm" onClick={onRemoveDiacritics}>
               <Trash className="h-4 w-4 me-1" /> Remove harakat
@@ -229,7 +290,7 @@ export default function Home() {
           </div>
         )}
 
-        {!loading && (
+        {!generating && (
           <div className="mt-6">
             <Button
               className={classNames(
