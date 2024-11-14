@@ -305,7 +305,12 @@ export default function Home() {
           </div>
         )}
       </div>
-      <div className="flex items-center justify-center h-16">
+      <div className="flex flex-col items-center justify-center py-3">
+        <div className="max-w-md rounded-md mb-4 px-2 py-1 bg-red-400 bg-opacity-40">
+          <b>Precaution:</b> keep in mind this is still an experimental tool, so
+          the AI can make mistakes in tashkil, translation, pronunciation, and
+          sentence generation.
+        </div>
         <p className="text-sm text-muted-foreground">
           Developed by Adam Albarghouthi
         </p>
