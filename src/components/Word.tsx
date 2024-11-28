@@ -38,7 +38,7 @@ export default function Word({
     <Tooltip content={translation}>
       <div
         id="word"
-        className="relative flex rounded-lg px-2 py-1.5 hover:bg-muted"
+        className="relative flex rounded-lg px-2 pt-3 pb-1.5 hover:bg-muted"
       >
         {charGroups.map((c, cIdx) => {
           return (

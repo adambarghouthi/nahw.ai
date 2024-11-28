@@ -213,8 +213,9 @@ export default function Home() {
                 dir="rtl"
                 className="flex flex-wrap justify-center relative gap-x-0.5 gap-y-4 text-white text-5xl"
               >
-                {words.map((word) => (
+                {words.map((word, wordIdx) => (
                   <Word
+                    key={wordIdx}
                     index={word.index}
                     translation={word.translation}
                     charGroups={word.charGroups}
