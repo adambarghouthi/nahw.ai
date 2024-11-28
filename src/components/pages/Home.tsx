@@ -187,7 +187,9 @@ export default function Home() {
                 setDiacriticsMenuCoords(undefined);
                 setSelectedChar(undefined);
               } else {
-                selectedChar && onAddDiacritic(selectedChar?.[2], toggleName);
+                if (selectedChar) {
+                  onAddDiacritic(selectedChar?.[2], toggleName);
+                }
               }
             }}
           />

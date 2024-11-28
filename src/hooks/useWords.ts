@@ -1,10 +1,5 @@
-import { useCallback, useState, useMemo } from "react";
-import {
-  addDiacritic,
-  removeDiacritics,
-  makeCharGroupsWithZwj,
-  removeDiacritic,
-} from "@/lib/shaping";
+import { useMemo } from "react";
+import { removeDiacritics, makeCharGroupsWithZwj } from "@/lib/shaping";
 
 interface useWordsProps {
   sentence: string;
