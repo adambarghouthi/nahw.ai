@@ -9,7 +9,10 @@ import {
 const useSentence = (s: string) => {
   const [sentence, setSentence] = useState<string>(s);
 
-  const charGroups = useMemo(() => makeCharGroupsWithZwj(sentence), [sentence]);
+  const charGroups = useMemo(
+    () => makeCharGroupsWithZwj(sentence).filter((c) => c !== " "),
+    [sentence]
+  );
 
   // adds diacritic at position
   const addCharDiacritic = useCallback(
