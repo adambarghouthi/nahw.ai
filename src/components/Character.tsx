@@ -1,12 +1,26 @@
+import { cn } from "@/lib/utils";
+
 interface CharacterProps {
   char: string | "";
-  onSelect: (char: string) => void;
+  selected?: boolean;
+  onSelect?: (coords: number[]) => void;
 }
-export default function Character({ char, onSelect }: CharacterProps) {
+export default function Character({
+  char,
+  selected,
+  onSelect,
+}: CharacterProps) {
   return (
     <a
-      className="cursor-pointer hover:text-green-500"
-      onClick={() => onSelect(char)}
+      className={cn(
+        "cursor-pointer hover:text-green-500",
+        selected && "text-green-500"
+      )}
+      onClick={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const coords = [rect.left, rect.top];
+        onSelect?.(coords);
+      }}
     >
       {char}
     </a>
