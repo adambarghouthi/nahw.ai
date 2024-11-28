@@ -175,7 +175,7 @@ export default function Home() {
   }, [difficulty, onNextClick]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-neutral-900">
+    <div className="flex flex-col items-center min-h-screen bg-neutral-900">
       <AnimatePresence>
         {diacriticsMenuCoords && (
           <DiacriticsMenubar
@@ -203,6 +203,13 @@ export default function Home() {
           value={difficulty}
           onChange={onDifficultyChange}
         />
+      </div>
+      <div className="mt-4 text-center max-w-xs">
+        <i>
+          Choose your difficulty and an Arabic sentence will be generated. Hover
+          over a word to see its English meaning and click a letter to add
+          harakat.
+        </i>
       </div>
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="flex flex-col items-center justify-center p-2 min-h-40 max-w-md">
@@ -298,7 +305,7 @@ export default function Home() {
         )}
       </div>
       <div className="flex flex-col items-center justify-center py-3">
-        <div className="max-w-md rounded-md mb-4 px-2 py-1 bg-red-400 bg-opacity-40">
+        <div className="max-w-md leading-5 rounded-md mb-4 px-2 py-1 bg-red-400 bg-opacity-40">
           <b>Precaution:</b> keep in mind this is still an experimental tool, so
           the AI can make mistakes in tashkil, translation, pronunciation, and
           sentence generation.
