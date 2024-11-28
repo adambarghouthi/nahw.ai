@@ -6,11 +6,10 @@ import {
   Languages,
   LoaderCircle,
   CircleHelp,
-  Redo,
-  Undo,
   Volume2,
 } from "lucide-react";
 import classNames from "classnames";
+import { AnimatePresence } from "framer-motion";
 
 import { removeDiacritics, removeZwj } from "@/lib/shaping";
 import { diacritics, diacriticsCodePoints } from "@/lib/diacritics";
@@ -19,13 +18,13 @@ import type { DifficultyType } from "@/lib/utils";
 import { convertToCodepoints, difficultyItems, orderShadda } from "@/lib/utils";
 import { playAudio } from "@/lib/audio/play";
 import useSentence from "@/hooks/useSentence";
-import useActions from "@/hooks/useActions";
+import useWords from "@/hooks/useWords";
 
-import Sentence from "../Sentence";
 import DiacriticsMenubar from "../DiacriticsMenubar";
 import Spinner from "../Spinner";
 import Select from "../Select";
 import Tooltip from "../Tooltip";
+import Word from "../Word";
 import { Button } from "../ui/button";
 import { TooltipProvider } from "../ui/tooltip";
 
@@ -38,16 +37,7 @@ export default function Home() {
     removeCharDiacritic,
     setSentence: setMutableSentence,
   } = useSentence("");
-  const {
-    addAction,
-    undoDisabled,
-    redoDisabled,
-    getUndoAction,
-    getRedoAction,
-    resetActions,
-  } = useActions();
 
-  const [selectedToggle, setSelectedToggle] = useState<string | null>(null);
   const [generating, setGenerating] = useState(true);
   const [speaking, setSpeaking] = useState(false);
   const [sentenceObject, setSentenceObject] = useState<SentenceObjectType>();
@@ -55,6 +45,16 @@ export default function Home() {
     difficultyItems[0].value
   );
   const [showDiacritics, setShowDiacritics] = useState(false);
+  const [diacriticsMenuCoords, setDiacriticsMenuCoords] = useState<
+    number[] | undefined
+  >();
+  const [selectedChar, setSelectedChar] = useState<number[] | undefined>();
+
+  const { words } = useWords({
+    sentence: sentenceObject?.arabic ?? "",
+    charGroups,
+    mapping: sentenceObject?.word_mapping ?? [],
+  });
 
   const isInitialized = useRef(false);
 
@@ -115,7 +115,6 @@ export default function Home() {
     async (d: DifficultyType) => {
       console.log("difficulty:", d);
       setGenerating(true);
-      setSelectedToggle(null);
 
       try {
         const res = await fetch("/api/generate", {
@@ -128,41 +127,35 @@ export default function Home() {
 
         setSentenceObject(sentenceResponse);
         setMutableSentence(removeDiacritics(sentenceResponse.arabic));
-        resetActions();
       } catch (error) {
         console.log(error);
       } finally {
         setGenerating(false);
       }
     },
-    [setMutableSentence, resetActions]
+    [setMutableSentence]
   );
 
   const onAddDiacritic = useCallback(
-    (cIdx: number) => {
-      if (!selectedToggle) return;
-
+    (index: number, toggleName: string) => {
       let codePointIdx = 0;
 
-      for (let i = 0; i < cIdx; i++) {
+      for (let i = 0; i < index; i++) {
         const charGroupWithoutZwj = removeZwj(charGroups[i]);
         codePointIdx += charGroupWithoutZwj.length;
       }
 
-      const diacriticCodepoint = diacritics.find(
-        (d) => d.name === selectedToggle
-      )?.codePoint as number;
+      const diacriticCodepoint = diacritics.find((d) => d.name === toggleName)
+        ?.codePoint as number;
 
       addCharDiacritic(codePointIdx, diacriticCodepoint);
-      addAction({ pos: codePointIdx, diacritic: diacriticCodepoint });
     },
-    [charGroups, selectedToggle, addCharDiacritic, addAction]
+    [charGroups, addCharDiacritic]
   );
 
   const onRemoveDiacritics = useCallback(() => {
     removeCharDiacritics();
-    resetActions();
-  }, [removeCharDiacritics, resetActions]);
+  }, [removeCharDiacritics]);
 
   const onDifficultyChange = useCallback(
     (value: string) => {
@@ -172,16 +165,6 @@ export default function Home() {
     },
     [onNextClick]
   );
-
-  const onUndoClick = useCallback(() => {
-    const action = getUndoAction();
-    if (action) removeCharDiacritic(action.pos);
-  }, [getUndoAction, removeCharDiacritic]);
-
-  const onRedoClick = useCallback(() => {
-    const action = getRedoAction();
-    if (action) addCharDiacritic(action.pos, action.diacritic);
-  }, [getRedoAction, addCharDiacritic]);
 
   useEffect(() => {
     // initialize the first sentence
@@ -193,6 +176,24 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-neutral-900">
+      <AnimatePresence>
+        {diacriticsMenuCoords && (
+          <DiacriticsMenubar
+            coords={diacriticsMenuCoords}
+            onSelect={(toggleName) => {
+              if (toggleName === "trash") {
+                removeCharDiacritic(selectedChar?.[1] as number);
+              } else if (toggleName === "close") {
+                setDiacriticsMenuCoords(undefined);
+                setSelectedChar(undefined);
+              } else {
+                selectedChar && onAddDiacritic(selectedChar?.[2], toggleName);
+              }
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-center gap-x-2 h-16">
         <p className="text-sm text-muted-foreground ">Difficulty</p>
         <Select
@@ -202,28 +203,39 @@ export default function Home() {
         />
       </div>
       <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="mb-3">
-          <DiacriticsMenubar
-            selected={selectedToggle}
-            onSelect={setSelectedToggle}
-          />
-          <p className="min-h-6 italic mt-1 text-sm text-muted-foreground text-center">
-            {selectedToggle ? `Selected ${selectedToggle}` : null}
-          </p>
-        </div>
-
         <div className="flex flex-col items-center justify-center p-2 min-h-40 max-w-md">
           {generating ? (
             <Spinner />
           ) : (
             <TooltipProvider>
-              <Sentence
+              <div
+                id="sentence"
+                dir="rtl"
+                className="flex flex-wrap justify-center relative gap-x-0.5 gap-y-4 text-white text-5xl"
+              >
+                {words.map((word) => (
+                  <Word
+                    index={word.index}
+                    translation={word.translation}
+                    charGroups={word.charGroups}
+                    diacriticCharGroups={word.diacriticCharGroups}
+                    range={word.range}
+                    showDiacritics={showDiacritics}
+                    selectedChar={selectedChar}
+                    onCharSelect={(wIdx, cIdx, addIdx, coords) => {
+                      setSelectedChar([wIdx, cIdx, addIdx]);
+                      setDiacriticsMenuCoords(coords);
+                    }}
+                  />
+                ))}
+              </div>
+              {/* <Sentence
                 sentence={sentenceObject?.arabic ?? ""}
                 charGroups={charGroups}
                 showDiacritics={showDiacritics}
                 mapping={sentenceObject?.word_mapping ?? []}
                 onCharSelect={onAddDiacritic}
-              />
+              /> */}
 
               <div className="flex items-center justify-center gap-x-5 mt-8">
                 <Button
@@ -254,41 +266,18 @@ export default function Home() {
                   <CircleHelp className="h-4 w-4" />
                 </Button>
 
-                <div className="space-x-1">
-                  <Tooltip content="Undo">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      disabled={undoDisabled}
-                      onClick={onUndoClick}
-                    >
-                      <Undo className="h-4 w-4" />
-                    </Button>
-                  </Tooltip>
-
-                  <Tooltip content="Redo">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      disabled={redoDisabled}
-                      onClick={onRedoClick}
-                    >
-                      <Redo className="h-4 w-4" />
-                    </Button>
-                  </Tooltip>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={!hasDiacritic}
+                  onClick={onRemoveDiacritics}
+                >
+                  <Trash className="h-4 w-4 me-1" /> Remove harakat
+                </Button>
               </div>
             </TooltipProvider>
           )}
         </div>
-
-        {!generating && mutableSentence && hasDiacritic && !isComplete && (
-          <div className="mt-6">
-            <Button variant="link" size="sm" onClick={onRemoveDiacritics}>
-              <Trash className="h-4 w-4 me-1" /> Remove harakat
-            </Button>
-          </div>
-        )}
 
         {!generating && (
           <div className="mt-6">
