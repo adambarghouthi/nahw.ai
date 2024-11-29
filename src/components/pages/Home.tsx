@@ -20,6 +20,7 @@ import {
   difficultyItems,
   getCodepointIdx,
   orderShadda,
+  wordContextActions,
 } from "@/lib/utils";
 import { playAudio } from "@/lib/audio/play";
 import useSentence from "@/hooks/useSentence";
@@ -192,6 +193,20 @@ export default function Home() {
     [onNextClick]
   );
 
+  const onWordAction = useCallback((action: string) => {
+    switch (action) {
+      case wordContextActions.IRAAB:
+        // call iraab api end point
+        break;
+      case wordContextActions.DEFINITION:
+        // call definition api end point
+        break;
+      case wordContextActions.ADD_TO_VOCABULARY:
+        // later when we have a database
+        break;
+    }
+  }, []);
+
   useEffect(() => {
     // initialize the first sentence
     if (!isInitialized.current) {
@@ -260,6 +275,7 @@ export default function Home() {
                     range={word.range}
                     showDiacritics={showDiacritics}
                     selectedChar={selectedChar}
+                    onWordAction={onWordAction}
                     onCharSelect={(wIdx, cIdx, addIdx, coords) => {
                       setSelectedChar([wIdx, cIdx, addIdx]);
                       setDiacriticsMenuCoords(coords);
