@@ -51,12 +51,7 @@ export default function Word({
                     index === selectedChar?.[0] && cIdx === selectedChar?.[1]
                   }
                   onSelect={(coords) => {
-                    onCharSelect(
-                      index,
-                      cIdx,
-                      cIdx + range.start + index /* to account for spaces */,
-                      coords
-                    );
+                    onCharSelect(index, cIdx, cIdx + range.start, coords);
                   }}
                 />
               </div>
