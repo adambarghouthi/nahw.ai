@@ -127,7 +127,7 @@ export default function Home() {
         setGenerating(false);
       }
     },
-    [setMutableSentence, removeCharDiacritic]
+    [setMutableSentence]
   );
 
   const getIrab = useCallback(
@@ -189,7 +189,7 @@ export default function Home() {
     removeCharDiacritic(
       codePointIdx + selectedChar[0] /* wIdx makes up for spaces */
     );
-  }, [charGroups, selectedChar, mutableSentence, addCharDiacritic]);
+  }, [charGroups, selectedChar, mutableSentence, removeCharDiacritic]);
 
   const onRemoveDiacritics = useCallback(() => {
     removeCharDiacritics();
@@ -224,7 +224,7 @@ export default function Home() {
           break;
       }
     },
-    [sentenceObject]
+    [getIrab, sentenceObject]
   );
 
   useEffect(() => {
