@@ -50,6 +50,12 @@ export const topics: string[] = [
   "Fashion",
 ];
 
+export const wordContextActions = {
+  IRAAB: "iraab",
+  DEFINITION: "definition",
+  ADD_TO_VOCABULARY: "add_to_vocabulary",
+};
+
 export function getRandomTopic(): string {
   const randomIndex = Math.floor(Math.random() * topics.length);
   return topics[randomIndex];
