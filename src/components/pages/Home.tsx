@@ -15,6 +15,8 @@ import { removeDiacritics } from "@/lib/shaping";
 import { diacritics, diacriticsCodePoints } from "@/lib/diacritics";
 import type { SentenceObjectType } from "@/lib/openai";
 import type { DifficultyType } from "@/lib/utils";
+import tts from "@/lib/api/tts";
+import generate from "@/lib/api/generate";
 import {
   convertToCodepoints,
   difficultyItems,
@@ -82,34 +84,17 @@ export default function Home() {
   }, [mutableSentence]);
 
   const speakSentence = useCallback(async () => {
+    if (!sentenceObject?.arabic) return;
+
     setSpeaking(true);
+
     try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        body: `Say this sentence: ${sentenceObject?.arabic}`,
-      });
+      const data = await tts(sentenceObject?.arabic);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      console.time("jsonParse");
-      const data = await response.json();
-      console.timeEnd("jsonParse");
-      console.log("Response data parsed");
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      if (data.audioData && data.audioMimeType) {
-        console.log("Audio data received, length:", data.audioData.length);
-        console.time("audioPlayback");
-        await playAudio(data.audioData, data.audioMimeType, data.response);
-        console.timeEnd("audioPlayback");
-      } else {
-        throw new Error("Ooops, no audio received");
-      }
+      console.log("Audio data received, length:", data.audioData.length);
+      console.time("audioPlayback");
+      await playAudio(data.audioData, data.audioMimeType, data.response);
+      console.timeEnd("audioPlayback");
     } catch (error) {
       console.log(error);
     } finally {
@@ -125,13 +110,9 @@ export default function Home() {
       setSelectedChar(undefined);
 
       try {
-        const res = await fetch("/api/generate", {
-          method: "POST",
-          body: JSON.stringify({ difficulty: d }),
-        });
+        const result = await generate(d);
+        const sentenceResponse = result.response;
 
-        const json = await res.json();
-        const sentenceResponse = json.response;
         setSentenceObject(sentenceResponse);
         setMutableSentence(removeDiacritics(sentenceResponse.arabic));
       } catch (error) {
