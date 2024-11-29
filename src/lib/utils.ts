@@ -1,7 +1,8 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-import { diacriticsCodePoints } from "./diacritics";
+import { diacritics, diacriticsCodePoints } from "./diacritics";
+import { removeZwj } from "./shaping";
 
 export type DifficultyType = "easy" | "medium" | "hard";
 
@@ -83,4 +84,15 @@ export const orderShadda = (arr: number[]) => {
   }
 
   return result;
+};
+
+export const getCodepointIdx = (index: number, charGroups: string[]) => {
+  let codePointIdx = 0;
+
+  for (let i = 0; i < index; i++) {
+    const charGroupWithoutZwj = removeZwj(charGroups[i]);
+    codePointIdx += charGroupWithoutZwj.length;
+  }
+
+  return codePointIdx;
 };
