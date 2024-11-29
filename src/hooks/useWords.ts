@@ -51,7 +51,7 @@ const useWords = ({ sentence, charGroups, mapping }: useWordsProps) => {
           range,
         };
       });
-  }, [charGroups, mapping]);
+  }, [charGroups, mapping, diacriticCharGroups]);
 
   return {
     words,

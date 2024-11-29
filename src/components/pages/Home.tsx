@@ -11,7 +11,7 @@ import {
 import classNames from "classnames";
 import { AnimatePresence } from "framer-motion";
 
-import { removeDiacritics, removeZwj } from "@/lib/shaping";
+import { removeDiacritics } from "@/lib/shaping";
 import { diacritics, diacriticsCodePoints } from "@/lib/diacritics";
 import type { SentenceObjectType } from "@/lib/openai";
 import type { DifficultyType } from "@/lib/utils";
@@ -139,7 +139,7 @@ export default function Home() {
         setGenerating(false);
       }
     },
-    [setMutableSentence]
+    [setMutableSentence, removeCharDiacritic]
   );
 
   const onAddDiacritic = useCallback(

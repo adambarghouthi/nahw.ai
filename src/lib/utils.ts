@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-import { diacritics, diacriticsCodePoints } from "./diacritics";
+import { diacriticsCodePoints } from "./diacritics";
 import { removeZwj } from "./shaping";
 
 export type DifficultyType = "easy" | "medium" | "hard";
