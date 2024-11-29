@@ -91,7 +91,7 @@ const generateSentence = async (
         role: "user",
         content: `${difficultyPrompt[difficulty](
           getRandomTopic()
-        )} with translation to ${trans}`,
+        )} with translation to ${trans} and without punctuation.`,
       },
     ],
   });
