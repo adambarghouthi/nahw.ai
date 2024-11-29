@@ -14,6 +14,22 @@ type SentenceObjectType = {
   }[];
 };
 
+export const getIrab = async (word: string, sentence: string) =>
+  openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are an Arabic grammar guru and you will answer questions about words' grammatical case in sentences.",
+      },
+      {
+        role: "user",
+        content: `Why does the "${word}" in the sentence "${sentence}" have that case-ending?`,
+      },
+    ],
+  });
+
 const addTashkil = async (sentence: string) =>
   openai.chat.completions.create({
     model: "gpt-4o",
