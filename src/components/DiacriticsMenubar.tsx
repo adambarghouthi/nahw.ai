@@ -45,7 +45,7 @@ export default function DiacriticsMenubar({
       className="fixed flex flex-row items-center rounded-lg gap-x-1 bg-primary-foreground border border-primary/15 p-1 shadow-lg z-20 transition-[top,left] duration-300 ease-in-out"
       style={{
         left: coords[0] - 65,
-        top: coords[1] + 50,
+        top: coords[1] + 70,
       }}
     >
       <div className="grid grid-cols-3 gap-1">
