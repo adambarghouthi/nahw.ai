@@ -15,7 +15,12 @@ import { removeDiacritics, removeZwj } from "@/lib/shaping";
 import { diacritics, diacriticsCodePoints } from "@/lib/diacritics";
 import type { SentenceObjectType } from "@/lib/openai";
 import type { DifficultyType } from "@/lib/utils";
-import { convertToCodepoints, difficultyItems, orderShadda } from "@/lib/utils";
+import {
+  convertToCodepoints,
+  difficultyItems,
+  getCodepointIdx,
+  orderShadda,
+} from "@/lib/utils";
 import { playAudio } from "@/lib/audio/play";
 import useSentence from "@/hooks/useSentence";
 import useWords from "@/hooks/useWords";
@@ -115,6 +120,8 @@ export default function Home() {
     async (d: DifficultyType) => {
       console.log("difficulty:", d);
       setGenerating(true);
+      setDiacriticsMenuCoords(undefined);
+      setSelectedChar(undefined);
 
       try {
         const res = await fetch("/api/generate", {
@@ -124,7 +131,7 @@ export default function Home() {
 
         const json = await res.json();
         const sentenceResponse = json.response;
-
+        console.log(sentenceResponse.arabic);
         setSentenceObject(sentenceResponse);
         setMutableSentence(removeDiacritics(sentenceResponse.arabic));
       } catch (error) {
@@ -137,21 +144,41 @@ export default function Home() {
   );
 
   const onAddDiacritic = useCallback(
-    (index: number, toggleName: string) => {
-      let codePointIdx = 0;
+    (diacriticName: string) => {
+      if (!selectedChar) return;
 
-      for (let i = 0; i < index; i++) {
-        const charGroupWithoutZwj = removeZwj(charGroups[i]);
-        codePointIdx += charGroupWithoutZwj.length;
-      }
+      const codePointIdx = getCodepointIdx(selectedChar[2], charGroups);
 
-      const diacriticCodepoint = diacritics.find((d) => d.name === toggleName)
-        ?.codePoint as number;
+      const diacriticCodepoint = diacritics.find(
+        (d) => d.name === diacriticName
+      )?.codePoint as number;
 
-      addCharDiacritic(codePointIdx, diacriticCodepoint);
+      addCharDiacritic(
+        codePointIdx + selectedChar[0] /* make up for spaces */,
+        diacriticCodepoint
+      );
     },
-    [charGroups, addCharDiacritic]
+    [charGroups, selectedChar, addCharDiacritic]
   );
+
+  const onRemoveDiacritic = useCallback(() => {
+    if (!selectedChar) return;
+
+    const codePointIdx = getCodepointIdx(selectedChar[2], charGroups);
+    const nextCodePointIdx =
+      codePointIdx + selectedChar[0] + 1; /* wIdx makes up for spaces */
+    const codePointSentence = convertToCodepoints(mutableSentence);
+
+    const hasNoDiacritic = !diacriticsCodePoints.includes(
+      codePointSentence[nextCodePointIdx]
+    );
+
+    if (hasNoDiacritic) return;
+
+    removeCharDiacritic(
+      codePointIdx + selectedChar[0] /* wIdx makes up for spaces */
+    );
+  }, [charGroups, selectedChar, mutableSentence, addCharDiacritic]);
 
   const onRemoveDiacritics = useCallback(() => {
     removeCharDiacritics();
@@ -182,13 +209,15 @@ export default function Home() {
             coords={diacriticsMenuCoords}
             onSelect={(toggleName) => {
               if (toggleName === "trash") {
-                removeCharDiacritic(selectedChar?.[1] as number);
+                if (selectedChar) {
+                  onRemoveDiacritic();
+                }
               } else if (toggleName === "close") {
                 setDiacriticsMenuCoords(undefined);
                 setSelectedChar(undefined);
               } else {
                 if (selectedChar) {
-                  onAddDiacritic(selectedChar?.[2], toggleName);
+                  onAddDiacritic(toggleName);
                 }
               }
             }}
