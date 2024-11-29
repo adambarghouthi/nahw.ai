@@ -131,7 +131,6 @@ export default function Home() {
 
         const json = await res.json();
         const sentenceResponse = json.response;
-        console.log(sentenceResponse.arabic);
         setSentenceObject(sentenceResponse);
         setMutableSentence(removeDiacritics(sentenceResponse.arabic));
       } catch (error) {
