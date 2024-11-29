@@ -17,6 +17,7 @@ import type { SentenceObjectType } from "@/lib/openai";
 import type { DifficultyType } from "@/lib/utils";
 import tts from "@/lib/api/tts";
 import generate from "@/lib/api/generate";
+import irab from "@/lib/api/irab";
 import {
   convertToCodepoints,
   difficultyItems,
@@ -35,6 +36,7 @@ import Tooltip from "../Tooltip";
 import Word from "../Word";
 import { Button } from "../ui/button";
 import { TooltipProvider } from "../ui/tooltip";
+import IrabDialog from "../IrabDialog";
 
 export default function Home() {
   const {
@@ -47,6 +49,7 @@ export default function Home() {
   } = useSentence("");
 
   const [generating, setGenerating] = useState(true);
+  const [irabing, setIrabing] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [sentenceObject, setSentenceObject] = useState<SentenceObjectType>();
   const [difficulty, setDifficulty] = useState<DifficultyType>(
@@ -57,6 +60,9 @@ export default function Home() {
     number[] | undefined
   >();
   const [selectedChar, setSelectedChar] = useState<number[] | undefined>();
+  const [irabDialogOpen, setIrabDialogOpen] = useState(false);
+  const [irabTitle, setIrabTitle] = useState("");
+  const [irabDescription, setIrabDescription] = useState("");
 
   const { words } = useWords({
     sentence: sentenceObject?.arabic ?? "",
@@ -124,6 +130,30 @@ export default function Home() {
     [setMutableSentence, removeCharDiacritic]
   );
 
+  const getIrab = useCallback(
+    async (word: string, sentence: string) => {
+      setIrabing(true);
+      setIrabDialogOpen(true);
+      console.log("Calling irab endpoint");
+      try {
+        const result = await irab(word, sentence);
+        const irabResponse = result.response;
+
+        setIrabTitle(`Why does the "${word}" have that case-ending?`);
+        setIrabDescription(irabResponse.irab);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setIrabing(false);
+      }
+    },
+    [setIrabing, setIrabDialogOpen, setIrabTitle, setIrabDescription]
+  );
+
+  const onIrabDialogOpenChange = (open: boolean) => {
+    setIrabDialogOpen(open);
+  };
+
   const onAddDiacritic = useCallback(
     (diacriticName: string) => {
       if (!selectedChar) return;
@@ -174,19 +204,28 @@ export default function Home() {
     [onNextClick]
   );
 
-  const onWordAction = useCallback((action: string) => {
-    switch (action) {
-      case wordContextActions.IRAAB:
-        // call iraab api end point
-        break;
-      case wordContextActions.DEFINITION:
-        // call definition api end point
-        break;
-      case wordContextActions.ADD_TO_VOCABULARY:
-        // later when we have a database
-        break;
-    }
-  }, []);
+  const onWordAction = useCallback(
+    (wIdx: number, action: string) => {
+      switch (action) {
+        case wordContextActions.IRAB:
+          // call irab api end point
+          if (sentenceObject) {
+            getIrab(
+              sentenceObject?.word_mapping[wIdx].arabic,
+              sentenceObject?.arabic
+            );
+          }
+          break;
+        case wordContextActions.DEFINITION:
+          // call definition api end point
+          break;
+        case wordContextActions.ADD_TO_VOCABULARY:
+          // later when we have a database
+          break;
+      }
+    },
+    [sentenceObject]
+  );
 
   useEffect(() => {
     // initialize the first sentence
@@ -196,6 +235,7 @@ export default function Home() {
     }
   }, [difficulty, onNextClick]);
 
+  console.log(irabDialogOpen);
   return (
     <div className="flex flex-col items-center min-h-screen bg-neutral-900">
       <AnimatePresence>
@@ -264,13 +304,6 @@ export default function Home() {
                   />
                 ))}
               </div>
-              {/* <Sentence
-                sentence={sentenceObject?.arabic ?? ""}
-                charGroups={charGroups}
-                showDiacritics={showDiacritics}
-                mapping={sentenceObject?.word_mapping ?? []}
-                onCharSelect={onAddDiacritic}
-              /> */}
 
               <div className="flex items-center justify-center gap-x-5 mt-8">
                 <Button
@@ -339,6 +372,14 @@ export default function Home() {
           Developed by Adam Albarghouthi
         </p>
       </div>
+
+      <IrabDialog
+        open={irabDialogOpen}
+        onOpenChange={onIrabDialogOpenChange}
+        title={irabTitle}
+        description={irabDescription}
+        loading={irabing}
+      />
     </div>
   );
 }
