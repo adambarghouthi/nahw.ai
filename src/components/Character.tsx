@@ -13,7 +13,7 @@ export default function Character({
   return (
     <a
       className={cn(
-        "cursor-pointer py-2 hover:text-green-500",
+        "cursor-pointer pt-2 pb-3 hover:text-green-500",
         selected && "text-green-500"
       )}
       onClick={(e) => {
