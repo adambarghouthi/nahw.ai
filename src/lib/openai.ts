@@ -54,7 +54,32 @@ const generateSentence = async (
   openai.chat.completions.create({
     model: "gpt-4o",
     response_format: {
-      type: "json_object",
+      type: "json_schema",
+      json_schema: {
+        name: "generation_response",
+        schema: {
+          type: "object",
+          properties: {
+            arabic: { type: "string" },
+            translation: { type: "string" },
+            word_mapping: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  arabic: { type: "string" },
+                  translation: { type: "string" },
+                  index: { type: "number" },
+                },
+                required: ["arabic", "translation", "index"],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ["arabic", "translation", "word_mapping"],
+          additionalProperties: false,
+        },
+      },
     },
     messages: [
       {
@@ -64,27 +89,7 @@ const generateSentence = async (
       },
       {
         role: "user",
-        content: `
-          ${difficultyPrompt[difficulty](getRandomTopic())}
-
-          Return the generated sentence in the following JSON:
-            {
-              "arabic": "string",
-              "translation": "string",
-              "word_mapping": [
-                {
-                  "arabic": "string",
-                  "translation": "string",
-                  "index": number
-                }
-              ]
-            }
-          Here's the definition for each key:
-            - arabic: the Arabic sentence you generated
-            - translation: the translation of the Arabic sentence in the ${trans} language
-            - word_mapping: a word-level mapping where each element in the array links an Arabic word in the generated sentence, its translation, and its index in the sentence, where the index of the first word should start at 0.
-              This structure can be used for aligning the Arabic sentence with its translation on a word-by-word basis, making it easier to map the original and translated sentences.
-        `,
+        content: difficultyPrompt[difficulty](getRandomTopic()),
       },
     ],
   });
