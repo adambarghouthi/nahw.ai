@@ -17,7 +17,7 @@ interface WordProps {
     start: number;
     end: number;
   };
-  onWordAction: (action: string) => void;
+  onWordAction: (wIdx: number, action: string) => void;
   onCharSelect: (
     wIdx: number,
     cIdx: number,
@@ -38,7 +38,7 @@ export default function Word({
   onCharSelect,
 }: WordProps) {
   return (
-    <WordContextMenu onClick={onWordAction}>
+    <WordContextMenu onClick={(action) => onWordAction(index, action)}>
       <Tooltip content={translation}>
         <div
           id="word"

@@ -51,7 +51,7 @@ export const topics: string[] = [
 ];
 
 export const wordContextActions = {
-  IRAAB: "iraab",
+  IRAB: "irab",
   DEFINITION: "definition",
   ADD_TO_VOCABULARY: "add_to_vocabulary",
 };

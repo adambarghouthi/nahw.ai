@@ -19,7 +19,7 @@ export default function WordContextMenu({
     <ContextMenu>
       <ContextMenuTrigger>{children}</ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => onClick(wordContextActions.IRAAB)}>
+        <ContextMenuItem onClick={() => onClick(wordContextActions.IRAB)}>
           ʾIʿrāb
         </ContextMenuItem>
         <ContextMenuItem onClick={() => onClick(wordContextActions.DEFINITION)}>
